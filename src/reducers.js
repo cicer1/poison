@@ -1,45 +1,30 @@
-import { ADD_PLAYER, REMOVE_PLAYER, START_ROUND } from './actions'
-import AVATARS from './avarars'
+import { ADD_PLAYER, REMOVE_PLAYER } from './actions'
 export default game
 
-const firstAvailableSlot = () => AVATARS.find(x => x.available)
-
-function Player (id) {
-  this.totalLife = 5
-  return {
-    id,
-    active: false,
-    alive: true,
-    remaining: this.totalLife
-  }
-}
-
 export const initialState = {
+  maxPlayers: 10,
   players: [],
-  queue: [],
-  maxPlayers: AVATARS.length,
-  round: {
-    ongoing: false,
-    guess: null
-  }
+  queue: []
 }
 
-function expenses (state = initialState, action = {}) {
-  switch (action.type) {
+function game (state = initialState, action = {}) {
+  const { type, payload } = action
+  switch (type) {
     case ADD_PLAYER:
-      return {
-        ...state
-      }
+      return addPlayer(state, payload)
     case REMOVE_PLAYER:
-      return {
-        ...state
-      }
-    case START_ROUND:
-      return {
-        ...state,
-        round: { ...state.round, ongoing: true, guess: 5 }
-      }
+      return removePlayer(state, payload)
     default:
       return state
   }
+}
+
+function addPlayer (state, player) {
+  return state.players.length < 10
+    ? { ...state, players: state.players.slice().concat(player) }
+    : { ...state, queue: state.queue.slice().concat(player) }
+}
+
+function removePlayer (state, player) {
+  return { ...state }
 }
