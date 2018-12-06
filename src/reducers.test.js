@@ -1,6 +1,20 @@
 import { addPlayer, removePlayer } from './actions'
 import game, { initialState } from './reducers'
 
+const addTenPlayers = (start = initialState) => {
+  const step1 = game(start, addPlayer('1'))
+  const step2 = game(step1, addPlayer('2'))
+  const step3 = game(step2, addPlayer('3'))
+  const step4 = game(step3, addPlayer('4'))
+  const step5 = game(step4, addPlayer('5'))
+  const step6 = game(step5, addPlayer('6'))
+  const step7 = game(step6, addPlayer('7'))
+  const step8 = game(step7, addPlayer('8'))
+  const step9 = game(step8, addPlayer('9'))
+  const step10 = game(step9, addPlayer('10'))
+  return step10
+}
+
 describe('reducers', () => {
   it('should return the default state', () => {
     expect(game()).toEqual(initialState)
@@ -37,18 +51,16 @@ describe('reducers', () => {
       expect(step21.queue.length).toEqual(11)
     })
   })
+  describe('removePlayer', () => {
+    it('should remove player from its own list', () => {
+      const step10 = addTenPlayers()
+      const step11 = game(step10, addPlayer('11'))
+      const step12 = game(step11, addPlayer('12'))
+      expect(step12.players.length).toEqual(10)
+      const afterRemove1 = game(step12, removePlayer('3'))
+      const afterRemove2 = game(afterRemove1, removePlayer('11'))
+      expect(afterRemove2.players.length).toEqual(9)
+      expect(afterRemove2.queue.length).toEqual(1)
+    })
+  })
 })
-
-const addTenPlayers = (start = initialState) => {
-  const step1 = game(start, addPlayer('1'))
-  const step2 = game(step1, addPlayer('2'))
-  const step3 = game(step2, addPlayer('3'))
-  const step4 = game(step3, addPlayer('4'))
-  const step5 = game(step4, addPlayer('5'))
-  const step6 = game(step5, addPlayer('6'))
-  const step7 = game(step6, addPlayer('7'))
-  const step8 = game(step7, addPlayer('8'))
-  const step9 = game(step8, addPlayer('9'))
-  const step10 = game(step9, addPlayer('10'))
-  return step10
-}

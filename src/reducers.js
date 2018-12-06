@@ -26,5 +26,18 @@ function addPlayer (state, player) {
 }
 
 function removePlayer (state, player) {
+  const playerIsInPlayers = state.players.find(x => x === player)
+  const playerIsInQueue = state.queue.find(x => x === player)
+  if (playerIsInPlayers) {
+    const index = state.players.findIndex(x => x === player)
+    const newPlayers = state.players.slice()
+    newPlayers.splice(index, 1)
+    return { ...state, players: newPlayers }
+  } else if (playerIsInQueue) {
+    const index = state.queue.findIndex(x => x === player)
+    const newQueue = state.queue.slice()
+    newQueue.splice(index, 1)
+    return { ...state, queue: newQueue }
+  }
   return { ...state }
 }
