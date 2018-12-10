@@ -1,4 +1,5 @@
 const express = require('express')
+const LinkedList = require('circular-list')
 
 const app = express()
 
@@ -11,7 +12,8 @@ const io = require('socket.io')(server)
 const game = {
   players: [],
   queue: [],
-  maxPlayers: 5
+  maxPlayers: 5,
+  list: null
 }
 
 const connections = []
@@ -23,11 +25,53 @@ const removeFromList = (list, item) => {
   }
 }
 
+const publishGame = () => {
+  let activePlayer = null
+
+  if (game.list) {
+    game.list.each(p => {
+      console.log(p)
+      if (p.active) {
+        activePlayer = p.player
+      }
+    })
+  }
+  activePlayer && console.log('activePlayer:', activePlayer)
+
+  io.sockets.emit(
+    'game_update',
+    JSON.stringify({
+      players: game.players,
+      queue: game.queue,
+      maxPlayers: game.maxPlayers,
+      activePlayer
+    })
+  )
+}
+
 const listenNumbers = socket => {
-  console.log('Listening guess for', socket.username)
   socket.on('send_number', ({ number }) => {
-    console.log(socket.username, number)
+    console.log('NUMBER: ', number)
+
+    const node = new LinkedList.Node({
+      player: game.list.first.data.player,
+      active: false
+    })
+    game.list.remove(game.list.first)
+    game.list.append(node)
+    game.list.first.data.active = true
+    publishGame()
   })
+}
+
+const startGame = () => {
+  console.log('start')
+  game.list = new LinkedList()
+  game.players.forEach(player =>
+    game.list.append(new LinkedList.Node({ player, active: false }))
+  )
+  game.list.first.data.active = true
+  publishGame()
 }
 
 // listen on every connection
@@ -39,10 +83,14 @@ io.on('connection', socket => {
   if (game.players.length < game.maxPlayers) {
     game.players.push(socket.username)
     listenNumbers(socket)
+    if (game.players.length === game.maxPlayers) {
+      startGame()
+    }
   } else {
     game.queue.push(socket.username)
   }
-  io.sockets.emit('game_update', JSON.stringify(game))
+  publishGame()
+
   socket.on('disconnect', () => {
     const userIsPlaying = game.players.find(x => x === socket.username)
     if (userIsPlaying) {
@@ -50,16 +98,18 @@ io.on('connection', socket => {
       game.players.splice(i, 1)
       // take the first in queue for playing
       const firstInQueue = game.queue[0]
-      game.players.push(firstInQueue)
-      game.queue.splice(0, 1)
-      const conn = connections.find(x => x.username === firstInQueue)
-      listenNumbers(conn)
+      if (firstInQueue) {
+        game.players.push(firstInQueue)
+        game.queue.splice(0, 1)
+        const conn = connections.find(x => x.username === firstInQueue)
+        listenNumbers(conn)
+      }
     } else {
       const i = game.queue.findIndex(x => x === socket.username)
       game.queue.splice(i, 1)
       removeFromList(game.queue, socket.username)
       removeFromList(connections, socket)
     }
-    io.sockets.emit('game_update', JSON.stringify(game))
+    publishGame()
   })
 })
